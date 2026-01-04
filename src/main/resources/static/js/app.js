@@ -18,13 +18,66 @@ const PRIORITY_LABELS = {
     'LOW': '낮음'
 };
 
+// Store plan data for progress calculation
+let planData = {
+    daily: [],
+    weekly: [],
+    monthly: [],
+    yearly: []
+};
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     initYearSelects();
     setDefaultDates();
+    initDarkMode();
     loadAllData();
 });
+
+// Dark Mode
+function initDarkMode() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        updateThemeIcon(true);
+    }
+}
+
+function toggleDarkMode() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+        updateThemeIcon(false);
+    } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+        updateThemeIcon(true);
+    }
+}
+
+function updateThemeIcon(isDark) {
+    const icon = document.querySelector('.theme-icon');
+    if (icon) {
+        icon.textContent = isDark ? '☀️' : '🌙';
+    }
+}
+
+// Update progress badges
+function updateProgressBadges() {
+    ['daily', 'weekly', 'monthly', 'yearly'].forEach(type => {
+        const data = planData[type];
+        const total = data.length;
+        const completed = data.filter(p => p.status === 'COMPLETED').length;
+        const badge = document.getElementById(`${type}-progress`);
+        if (badge && total > 0) {
+            badge.textContent = `${completed}/${total}`;
+        } else if (badge) {
+            badge.textContent = '';
+        }
+    });
+}
 
 // Tab handling
 function initTabs() {
@@ -140,7 +193,9 @@ async function apiCall(endpoint, method = 'GET', body = null) {
 async function loadDaily() {
     try {
         const data = await apiCall('/daily');
+        planData.daily = data;
         renderPlanList('daily-list', data, 'daily');
+        updateProgressBadges();
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -172,7 +227,9 @@ async function filterDaily() {
 async function loadWeekly() {
     try {
         const data = await apiCall('/weekly');
+        planData.weekly = data;
         renderPlanList('weekly-list', data, 'weekly');
+        updateProgressBadges();
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -204,7 +261,9 @@ async function filterWeekly() {
 async function loadMonthly() {
     try {
         const data = await apiCall('/monthly');
+        planData.monthly = data;
         renderPlanList('monthly-list', data, 'monthly');
+        updateProgressBadges();
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -236,7 +295,9 @@ async function filterMonthly() {
 async function loadYearly() {
     try {
         const data = await apiCall('/yearly');
+        planData.yearly = data;
         renderPlanList('yearly-list', data, 'yearly');
+        updateProgressBadges();
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -327,7 +388,8 @@ function createPlanCard(plan, type) {
     const statusSelectDisabled = isFinalized ? 'disabled title="완료 또는 실패 상태는 변경할 수 없습니다."' : '';
 
     return `
-        <div class="plan-card" draggable="true" data-id="${plan.id}" data-type="${type}">
+        <div class="plan-card status-${plan.status}" draggable="true" data-id="${plan.id}" data-type="${type}">
+            <div class="priority-bar priority-${plan.priority}"></div>
             <div class="drag-handle">⋮⋮</div>
             <div class="plan-card-content">
                 <div class="plan-card-header">
@@ -350,7 +412,7 @@ function createPlanCard(plan, type) {
                     <div class="plan-card-date">${dateInfo}</div>
                     <div class="plan-card-actions">
                         <button class="btn btn-secondary btn-sm" onclick="editPlan('${type}', ${plan.id})">수정</button>
-                        <button class="btn btn-danger btn-sm" onclick="deletePlan('${type}', ${plan.id})">삭제</button>
+                        <button class="btn btn-danger btn-sm" onclick="deletePlanWithAnimation('${type}', ${plan.id}, this)">삭제</button>
                     </div>
                 </div>
             </div>
@@ -472,6 +534,30 @@ async function deletePlan(type, id) {
 
     try {
         await apiCall(`/${type}/${id}`, 'DELETE');
+        showToast('계획이 삭제되었습니다.', 'success');
+        reloadCurrentTab();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+// Delete plan with animation
+async function deletePlanWithAnimation(type, id, buttonElement) {
+    if (!confirm('정말 삭제하시겠습니까?')) {
+        return;
+    }
+
+    const card = buttonElement.closest('.plan-card');
+
+    try {
+        await apiCall(`/${type}/${id}`, 'DELETE');
+
+        // Add exit animation
+        if (card) {
+            card.classList.add('removing');
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
         showToast('계획이 삭제되었습니다.', 'success');
         reloadCurrentTab();
     } catch (error) {

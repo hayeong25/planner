@@ -9,15 +9,34 @@
 <body>
     <div class="container">
         <header>
-            <h1>Planner</h1>
-            <p class="subtitle">일간 / 주간 / 월간 / 연간 계획 관리</p>
+            <div class="header-content">
+                <div>
+                    <h1>Planner</h1>
+                    <p class="subtitle">일간 / 주간 / 월간 / 연간 계획 관리</p>
+                </div>
+                <button class="theme-toggle" onclick="toggleDarkMode()" title="다크모드 전환">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
         </header>
 
         <nav class="tabs">
-            <button class="tab-btn active" data-tab="daily">일간 계획</button>
-            <button class="tab-btn" data-tab="weekly">주간 계획</button>
-            <button class="tab-btn" data-tab="monthly">월간 계획</button>
-            <button class="tab-btn" data-tab="yearly">연간 계획</button>
+            <button class="tab-btn active" data-tab="daily">
+                일간 계획
+                <span class="progress-badge" id="daily-progress"></span>
+            </button>
+            <button class="tab-btn" data-tab="weekly">
+                주간 계획
+                <span class="progress-badge" id="weekly-progress"></span>
+            </button>
+            <button class="tab-btn" data-tab="monthly">
+                월간 계획
+                <span class="progress-badge" id="monthly-progress"></span>
+            </button>
+            <button class="tab-btn" data-tab="yearly">
+                연간 계획
+                <span class="progress-badge" id="yearly-progress"></span>
+            </button>
         </nav>
 
         <!-- Daily Tab -->
