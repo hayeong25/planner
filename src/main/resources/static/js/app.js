@@ -323,6 +323,9 @@ function createPlanCard(plan, type) {
         dateInfo = `📅 ${plan.year}년`;
     }
 
+    const isFinalized = plan.status === 'COMPLETED' || plan.status === 'FAILED';
+    const statusSelectDisabled = isFinalized ? 'disabled title="완료 또는 실패 상태는 변경할 수 없습니다."' : '';
+
     return `
         <div class="plan-card" draggable="true" data-id="${plan.id}" data-type="${type}">
             <div class="drag-handle">⋮⋮</div>
@@ -335,7 +338,7 @@ function createPlanCard(plan, type) {
                             <span class="badge badge-status-${plan.status}">${STATUS_LABELS[plan.status]}</span>
                         </div>
                     </div>
-                    <select class="status-select" onchange="updateStatus('${type}', ${plan.id}, this.value)">
+                    <select class="status-select" onchange="updateStatus('${type}', ${plan.id}, this.value)" ${statusSelectDisabled}>
                         <option value="NOT_STARTED" ${plan.status === 'NOT_STARTED' ? 'selected' : ''}>시작 전</option>
                         <option value="IN_PROGRESS" ${plan.status === 'IN_PROGRESS' ? 'selected' : ''}>진행 중</option>
                         <option value="COMPLETED" ${plan.status === 'COMPLETED' ? 'selected' : ''}>완료</option>

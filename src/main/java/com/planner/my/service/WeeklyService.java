@@ -139,17 +139,32 @@ public class WeeklyService {
 
     /**
      * 주간 계획의 상태를 변경합니다.
+     * 완료(COMPLETED) 또는 실패(FAILED) 상태인 계획은 상태를 변경할 수 없습니다.
      *
      * @param id 변경할 계획 ID
      * @param status 새로운 상태
      * @return 수정된 주간 계획 응답
+     * @throws IllegalStateException 완료 또는 실패 상태의 계획을 변경하려 할 때
      */
     @Transactional
     public WeeklyPlanResponse updateStatus(Long id, PlanStatus status) {
         WeeklyPlan plan = weeklyPlanRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Weekly plan not found: " + id));
+        validateStatusChange(plan.getStatus());
         plan.setStatus(status);
         return WeeklyPlanResponse.from(plan);
+    }
+
+    /**
+     * 상태 변경 가능 여부를 검증합니다.
+     *
+     * @param currentStatus 현재 상태
+     * @throws IllegalStateException 완료 또는 실패 상태일 때
+     */
+    private void validateStatusChange(PlanStatus currentStatus) {
+        if (currentStatus == PlanStatus.COMPLETED || currentStatus == PlanStatus.FAILED) {
+            throw new IllegalStateException("완료 또는 실패 상태의 계획은 상태를 변경할 수 없습니다.");
+        }
     }
 
     /**
