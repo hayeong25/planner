@@ -23,10 +23,10 @@ public class MonthlyPlan {
 
     private String description;
 
-    @Column(nullable = false)
+    @Column(name = "plan_year", nullable = false)
     private Integer year;
 
-    @Column(nullable = false)
+    @Column(name = "plan_month", nullable = false)
     private Integer month;
 
     @Enumerated(EnumType.STRING)

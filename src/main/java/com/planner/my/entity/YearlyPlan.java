@@ -23,7 +23,7 @@ public class YearlyPlan {
 
     private String description;
 
-    @Column(nullable = false)
+    @Column(name = "plan_year", nullable = false)
     private Integer year;
 
     @Enumerated(EnumType.STRING)
