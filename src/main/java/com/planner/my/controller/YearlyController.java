@@ -1,5 +1,6 @@
 package com.planner.my.controller;
 
+import com.planner.my.dto.ReorderRequest;
 import com.planner.my.dto.YearlyPlanRequest;
 import com.planner.my.dto.YearlyPlanResponse;
 import com.planner.my.dto.StatusUpdateRequest;
@@ -87,5 +88,17 @@ public class YearlyController {
             @Parameter(description = "계획 ID", example = "1") @PathVariable Long id) {
         yearlyService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 연간 계획의 표시 순서를 재정렬합니다.
+     *
+     * @param request 새로운 순서대로 정렬된 계획 ID 목록
+     * @return 재정렬된 연간 계획 목록
+     */
+    @PutMapping("/reorder")
+    @Operation(summary = "연간 계획 순서 변경", description = "드래그 앤 드롭으로 계획 순서를 변경합니다.")
+    public ResponseEntity<List<YearlyPlanResponse>> reorder(@Valid @RequestBody ReorderRequest request) {
+        return ResponseEntity.ok(yearlyService.reorder(request.getOrderedIds()));
     }
 }

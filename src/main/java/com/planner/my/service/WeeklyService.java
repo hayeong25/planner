@@ -20,8 +20,15 @@ public class WeeklyService {
 
     private final WeeklyPlanRepository weeklyPlanRepository;
 
+    /**
+     * 새로운 주간 계획을 생성합니다.
+     *
+     * @param request 주간 계획 생성 요청
+     * @return 생성된 주간 계획 응답
+     */
     @Transactional
     public WeeklyPlanResponse create(WeeklyPlanRequest request) {
+        Integer maxOrder = weeklyPlanRepository.findMaxDisplayOrder();
         WeeklyPlan plan = WeeklyPlan.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
@@ -29,46 +36,90 @@ public class WeeklyService {
                 .weekEndDate(request.getWeekEndDate())
                 .priority(request.getPriority())
                 .status(request.getStatus() != null ? request.getStatus() : PlanStatus.NOT_STARTED)
+                .displayOrder(maxOrder + 1)
                 .build();
         return WeeklyPlanResponse.from(weeklyPlanRepository.save(plan));
     }
 
+    /**
+     * 모든 주간 계획을 표시 순서대로 조회합니다.
+     *
+     * @return 주간 계획 목록
+     */
     public List<WeeklyPlanResponse> findAll() {
-        return weeklyPlanRepository.findAll().stream()
+        return weeklyPlanRepository.findAllByOrderByDisplayOrderAsc().stream()
                 .map(WeeklyPlanResponse::from)
                 .toList();
     }
 
+    /**
+     * ID로 주간 계획을 조회합니다.
+     *
+     * @param id 조회할 계획 ID
+     * @return 주간 계획 응답
+     */
     public WeeklyPlanResponse findById(Long id) {
         return weeklyPlanRepository.findById(id)
                 .map(WeeklyPlanResponse::from)
                 .orElseThrow(() -> new IllegalArgumentException("Weekly plan not found: " + id));
     }
 
+    /**
+     * 주 시작일로 주간 계획을 조회합니다.
+     *
+     * @param weekStartDate 주 시작일
+     * @return 해당 주의 계획 목록
+     */
     public List<WeeklyPlanResponse> findByWeekStartDate(LocalDate weekStartDate) {
-        return weeklyPlanRepository.findByWeekStartDate(weekStartDate).stream()
+        return weeklyPlanRepository.findByWeekStartDateOrderByDisplayOrderAsc(weekStartDate).stream()
                 .map(WeeklyPlanResponse::from)
                 .toList();
     }
 
+    /**
+     * 날짜 범위의 주간 계획을 조회합니다.
+     *
+     * @param startDate 시작 날짜
+     * @param endDate 종료 날짜
+     * @return 해당 기간의 주간 계획 목록
+     */
     public List<WeeklyPlanResponse> findByDateRange(LocalDate startDate, LocalDate endDate) {
-        return weeklyPlanRepository.findByWeekStartDateBetween(startDate, endDate).stream()
+        return weeklyPlanRepository.findByWeekStartDateBetweenOrderByDisplayOrderAsc(startDate, endDate).stream()
                 .map(WeeklyPlanResponse::from)
                 .toList();
     }
 
+    /**
+     * 상태별 주간 계획을 조회합니다.
+     *
+     * @param status 조회할 상태
+     * @return 해당 상태의 주간 계획 목록
+     */
     public List<WeeklyPlanResponse> findByStatus(PlanStatus status) {
-        return weeklyPlanRepository.findByStatus(status).stream()
+        return weeklyPlanRepository.findByStatusOrderByDisplayOrderAsc(status).stream()
                 .map(WeeklyPlanResponse::from)
                 .toList();
     }
 
+    /**
+     * 우선순위별 주간 계획을 조회합니다.
+     *
+     * @param priority 조회할 우선순위
+     * @return 해당 우선순위의 주간 계획 목록
+     */
     public List<WeeklyPlanResponse> findByPriority(Priority priority) {
-        return weeklyPlanRepository.findByPriority(priority).stream()
+        return weeklyPlanRepository.findByPriorityOrderByDisplayOrderAsc(priority).stream()
                 .map(WeeklyPlanResponse::from)
                 .toList();
     }
 
+    /**
+     * 주간 계획을 수정합니다.
+     *
+     * @param id 수정할 계획 ID
+     * @param request 수정 요청
+     * @return 수정된 주간 계획 응답
+     */
     @Transactional
     public WeeklyPlanResponse update(Long id, WeeklyPlanRequest request) {
         WeeklyPlan plan = weeklyPlanRepository.findById(id)
@@ -86,6 +137,13 @@ public class WeeklyService {
         return WeeklyPlanResponse.from(plan);
     }
 
+    /**
+     * 주간 계획의 상태를 변경합니다.
+     *
+     * @param id 변경할 계획 ID
+     * @param status 새로운 상태
+     * @return 수정된 주간 계획 응답
+     */
     @Transactional
     public WeeklyPlanResponse updateStatus(Long id, PlanStatus status) {
         WeeklyPlan plan = weeklyPlanRepository.findById(id)
@@ -94,11 +152,33 @@ public class WeeklyService {
         return WeeklyPlanResponse.from(plan);
     }
 
+    /**
+     * 주간 계획을 삭제합니다.
+     *
+     * @param id 삭제할 계획 ID
+     */
     @Transactional
     public void delete(Long id) {
         if (!weeklyPlanRepository.existsById(id)) {
             throw new IllegalArgumentException("Weekly plan not found: " + id);
         }
         weeklyPlanRepository.deleteById(id);
+    }
+
+    /**
+     * 주간 계획의 표시 순서를 재정렬합니다.
+     *
+     * @param orderedIds 새로운 순서대로 정렬된 계획 ID 목록
+     * @return 재정렬된 주간 계획 목록
+     */
+    @Transactional
+    public List<WeeklyPlanResponse> reorder(List<Long> orderedIds) {
+        for (int i = 0; i < orderedIds.size(); i++) {
+            Long id = orderedIds.get(i);
+            WeeklyPlan plan = weeklyPlanRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Weekly plan not found: " + id));
+            plan.setDisplayOrder(i);
+        }
+        return findAll();
     }
 }

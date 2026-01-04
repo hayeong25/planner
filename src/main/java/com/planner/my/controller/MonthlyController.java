@@ -2,6 +2,7 @@ package com.planner.my.controller;
 
 import com.planner.my.dto.MonthlyPlanRequest;
 import com.planner.my.dto.MonthlyPlanResponse;
+import com.planner.my.dto.ReorderRequest;
 import com.planner.my.dto.StatusUpdateRequest;
 import com.planner.my.entity.PlanStatus;
 import com.planner.my.entity.Priority;
@@ -95,5 +96,17 @@ public class MonthlyController {
             @Parameter(description = "계획 ID", example = "1") @PathVariable Long id) {
         monthlyService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 월간 계획의 표시 순서를 재정렬합니다.
+     *
+     * @param request 새로운 순서대로 정렬된 계획 ID 목록
+     * @return 재정렬된 월간 계획 목록
+     */
+    @PutMapping("/reorder")
+    @Operation(summary = "월간 계획 순서 변경", description = "드래그 앤 드롭으로 계획 순서를 변경합니다.")
+    public ResponseEntity<List<MonthlyPlanResponse>> reorder(@Valid @RequestBody ReorderRequest request) {
+        return ResponseEntity.ok(monthlyService.reorder(request.getOrderedIds()));
     }
 }

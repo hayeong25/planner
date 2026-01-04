@@ -37,6 +37,9 @@ public class MonthlyPlan {
     @Column(nullable = false)
     private PlanStatus status;
 
+    @Column(nullable = false)
+    private Integer displayOrder = 0;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -46,6 +49,9 @@ public class MonthlyPlan {
         createdAt = LocalDateTime.now();
         if (status == null) {
             status = PlanStatus.NOT_STARTED;
+        }
+        if (displayOrder == null) {
+            displayOrder = 0;
         }
     }
 

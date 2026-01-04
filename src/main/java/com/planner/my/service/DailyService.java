@@ -20,20 +20,33 @@ public class DailyService {
 
     private final DailyPlanRepository dailyPlanRepository;
 
+    /**
+     * 새로운 일간 계획을 생성합니다.
+     *
+     * @param request 일간 계획 생성 요청
+     * @return 생성된 일간 계획 응답
+     */
     @Transactional
     public DailyPlanResponse create(DailyPlanRequest request) {
+        Integer maxOrder = dailyPlanRepository.findMaxDisplayOrder();
         DailyPlan plan = DailyPlan.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .planDate(request.getPlanDate())
                 .priority(request.getPriority())
                 .status(request.getStatus() != null ? request.getStatus() : PlanStatus.NOT_STARTED)
+                .displayOrder(maxOrder + 1)
                 .build();
         return DailyPlanResponse.from(dailyPlanRepository.save(plan));
     }
 
+    /**
+     * 모든 일간 계획을 표시 순서대로 조회합니다.
+     *
+     * @return 일간 계획 목록
+     */
     public List<DailyPlanResponse> findAll() {
-        return dailyPlanRepository.findAll().stream()
+        return dailyPlanRepository.findAllByOrderByDisplayOrderAsc().stream()
                 .map(DailyPlanResponse::from)
                 .toList();
     }
@@ -44,26 +57,51 @@ public class DailyService {
                 .orElseThrow(() -> new IllegalArgumentException("Daily plan not found: " + id));
     }
 
+    /**
+     * 특정 날짜의 일간 계획을 조회합니다.
+     *
+     * @param date 조회할 날짜
+     * @return 해당 날짜의 일간 계획 목록
+     */
     public List<DailyPlanResponse> findByDate(LocalDate date) {
-        return dailyPlanRepository.findByPlanDate(date).stream()
+        return dailyPlanRepository.findByPlanDateOrderByDisplayOrderAsc(date).stream()
                 .map(DailyPlanResponse::from)
                 .toList();
     }
 
+    /**
+     * 날짜 범위의 일간 계획을 조회합니다.
+     *
+     * @param startDate 시작 날짜
+     * @param endDate 종료 날짜
+     * @return 해당 기간의 일간 계획 목록
+     */
     public List<DailyPlanResponse> findByDateRange(LocalDate startDate, LocalDate endDate) {
-        return dailyPlanRepository.findByPlanDateBetween(startDate, endDate).stream()
+        return dailyPlanRepository.findByPlanDateBetweenOrderByDisplayOrderAsc(startDate, endDate).stream()
                 .map(DailyPlanResponse::from)
                 .toList();
     }
 
+    /**
+     * 상태별 일간 계획을 조회합니다.
+     *
+     * @param status 조회할 상태
+     * @return 해당 상태의 일간 계획 목록
+     */
     public List<DailyPlanResponse> findByStatus(PlanStatus status) {
-        return dailyPlanRepository.findByStatus(status).stream()
+        return dailyPlanRepository.findByStatusOrderByDisplayOrderAsc(status).stream()
                 .map(DailyPlanResponse::from)
                 .toList();
     }
 
+    /**
+     * 우선순위별 일간 계획을 조회합니다.
+     *
+     * @param priority 조회할 우선순위
+     * @return 해당 우선순위의 일간 계획 목록
+     */
     public List<DailyPlanResponse> findByPriority(Priority priority) {
-        return dailyPlanRepository.findByPriority(priority).stream()
+        return dailyPlanRepository.findByPriorityOrderByDisplayOrderAsc(priority).stream()
                 .map(DailyPlanResponse::from)
                 .toList();
     }
@@ -92,11 +130,33 @@ public class DailyService {
         return DailyPlanResponse.from(plan);
     }
 
+    /**
+     * 일간 계획을 삭제합니다.
+     *
+     * @param id 삭제할 계획 ID
+     */
     @Transactional
     public void delete(Long id) {
         if (!dailyPlanRepository.existsById(id)) {
             throw new IllegalArgumentException("Daily plan not found: " + id);
         }
         dailyPlanRepository.deleteById(id);
+    }
+
+    /**
+     * 일간 계획의 표시 순서를 재정렬합니다.
+     *
+     * @param orderedIds 새로운 순서대로 정렬된 계획 ID 목록
+     * @return 재정렬된 일간 계획 목록
+     */
+    @Transactional
+    public List<DailyPlanResponse> reorder(List<Long> orderedIds) {
+        for (int i = 0; i < orderedIds.size(); i++) {
+            Long id = orderedIds.get(i);
+            DailyPlan plan = dailyPlanRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Daily plan not found: " + id));
+            plan.setDisplayOrder(i);
+        }
+        return findAll();
     }
 }

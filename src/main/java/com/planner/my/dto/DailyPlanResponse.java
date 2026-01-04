@@ -41,6 +41,15 @@ public class DailyPlanResponse {
     @Schema(description = "수정 일시", example = "2025-12-21T10:30:00")
     private LocalDateTime updatedAt;
 
+    @Schema(description = "표시 순서", example = "1")
+    private Integer displayOrder;
+
+    /**
+     * DailyPlan 엔티티를 DailyPlanResponse DTO로 변환합니다.
+     *
+     * @param entity 변환할 DailyPlan 엔티티
+     * @return 변환된 DailyPlanResponse DTO
+     */
     public static DailyPlanResponse from(DailyPlan entity) {
         return DailyPlanResponse.builder()
                 .id(entity.getId())
@@ -51,6 +60,7 @@ public class DailyPlanResponse {
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .displayOrder(entity.getDisplayOrder())
                 .build();
     }
 }

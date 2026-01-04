@@ -43,6 +43,15 @@ public class MonthlyPlanResponse {
     @Schema(description = "수정 일시", example = "2025-12-21T10:30:00")
     private LocalDateTime updatedAt;
 
+    @Schema(description = "표시 순서", example = "1")
+    private Integer displayOrder;
+
+    /**
+     * MonthlyPlan 엔티티를 MonthlyPlanResponse DTO로 변환합니다.
+     *
+     * @param entity 변환할 MonthlyPlan 엔티티
+     * @return 변환된 MonthlyPlanResponse DTO
+     */
     public static MonthlyPlanResponse from(MonthlyPlan entity) {
         return MonthlyPlanResponse.builder()
                 .id(entity.getId())
@@ -54,6 +63,7 @@ public class MonthlyPlanResponse {
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .displayOrder(entity.getDisplayOrder())
                 .build();
     }
 }
