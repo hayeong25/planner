@@ -2,10 +2,11 @@ package com.planner.my.service;
 
 import com.planner.my.dto.WeeklyPlanRequest;
 import com.planner.my.dto.WeeklyPlanResponse;
-import com.planner.my.entity.WeeklyPlan;
 import com.planner.my.entity.PlanStatus;
 import com.planner.my.entity.Priority;
+import com.planner.my.entity.WeeklyPlan;
 import com.planner.my.repository.WeeklyPlanRepository;
+import com.planner.my.util.PlanStatusValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -150,21 +151,9 @@ public class WeeklyService {
     public WeeklyPlanResponse updateStatus(Long id, PlanStatus status) {
         WeeklyPlan plan = weeklyPlanRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Weekly plan not found: " + id));
-        validateStatusChange(plan.getStatus());
+        PlanStatusValidator.validateStatusChange(plan.getStatus());
         plan.setStatus(status);
         return WeeklyPlanResponse.from(plan);
-    }
-
-    /**
-     * 상태 변경 가능 여부를 검증합니다.
-     *
-     * @param currentStatus 현재 상태
-     * @throws IllegalStateException 완료 또는 실패 상태일 때
-     */
-    private void validateStatusChange(PlanStatus currentStatus) {
-        if (currentStatus == PlanStatus.COMPLETED || currentStatus == PlanStatus.FAILED) {
-            throw new IllegalStateException("완료 또는 실패 상태의 계획은 상태를 변경할 수 없습니다.");
-        }
     }
 
     /**

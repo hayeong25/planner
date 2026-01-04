@@ -156,10 +156,7 @@ function formatDate(date) {
 
 // Load all data
 function loadAllData() {
-    loadDaily();
-    loadWeekly();
-    loadMonthly();
-    loadYearly();
+    ['daily', 'weekly', 'monthly', 'yearly'].forEach(loadPlanData);
 }
 
 // API calls
@@ -189,17 +186,23 @@ async function apiCall(endpoint, method = 'GET', body = null) {
     return response.json();
 }
 
-// Daily
-async function loadDaily() {
+/**
+ * 공통 계획 데이터 로드 함수
+ * @param {string} type - 계획 타입 (daily, weekly, monthly, yearly)
+ */
+async function loadPlanData(type) {
     try {
-        const data = await apiCall('/daily');
-        planData.daily = data;
-        renderPlanList('daily-list', data, 'daily');
+        const data = await apiCall(`/${type}`);
+        planData[type] = data;
+        renderPlanList(`${type}-list`, data, type);
         updateProgressBadges();
     } catch (error) {
         showToast(error.message, 'error');
     }
 }
+
+// Daily
+const loadDaily = () => loadPlanData('daily');
 
 async function filterDaily() {
     const date = document.getElementById('daily-filter-date').value;
@@ -224,16 +227,7 @@ async function filterDaily() {
 }
 
 // Weekly
-async function loadWeekly() {
-    try {
-        const data = await apiCall('/weekly');
-        planData.weekly = data;
-        renderPlanList('weekly-list', data, 'weekly');
-        updateProgressBadges();
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-}
+const loadWeekly = () => loadPlanData('weekly');
 
 async function filterWeekly() {
     const date = document.getElementById('weekly-filter-date').value;
@@ -258,16 +252,7 @@ async function filterWeekly() {
 }
 
 // Monthly
-async function loadMonthly() {
-    try {
-        const data = await apiCall('/monthly');
-        planData.monthly = data;
-        renderPlanList('monthly-list', data, 'monthly');
-        updateProgressBadges();
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-}
+const loadMonthly = () => loadPlanData('monthly');
 
 async function filterMonthly() {
     const year = document.getElementById('monthly-filter-year').value;
@@ -292,16 +277,7 @@ async function filterMonthly() {
 }
 
 // Yearly
-async function loadYearly() {
-    try {
-        const data = await apiCall('/yearly');
-        planData.yearly = data;
-        renderPlanList('yearly-list', data, 'yearly');
-        updateProgressBadges();
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-}
+const loadYearly = () => loadPlanData('yearly');
 
 async function filterYearly() {
     const year = document.getElementById('yearly-filter-year').value;
@@ -526,21 +502,6 @@ async function editPlan(type, id) {
     }
 }
 
-// Delete plan
-async function deletePlan(type, id) {
-    if (!confirm('정말 삭제하시겠습니까?')) {
-        return;
-    }
-
-    try {
-        await apiCall(`/${type}/${id}`, 'DELETE');
-        showToast('계획이 삭제되었습니다.', 'success');
-        reloadCurrentTab();
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-}
-
 // Delete plan with animation
 async function deletePlanWithAnimation(type, id, buttonElement) {
     if (!confirm('정말 삭제하시겠습니까?')) {
@@ -578,10 +539,7 @@ async function updateStatus(type, id, status) {
 
 // Reload current tab data
 function reloadCurrentTab() {
-    if (currentTab === 'daily') loadDaily();
-    else if (currentTab === 'weekly') loadWeekly();
-    else if (currentTab === 'monthly') loadMonthly();
-    else if (currentTab === 'yearly') loadYearly();
+    loadPlanData(currentTab);
 }
 
 // Toast notification
