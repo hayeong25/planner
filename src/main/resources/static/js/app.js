@@ -2,7 +2,11 @@
 const API_BASE = '/api';
 
 // Current tab
-let currentTab = 'daily';
+let currentTab = 'calendar';
+
+// Calendar state
+let currentCalendarYear = new Date().getFullYear();
+let currentCalendarMonth = new Date().getMonth();
 
 // Status and Priority labels
 const STATUS_LABELS = {
@@ -33,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setDefaultDates();
     initDarkMode();
     loadAllData();
+    initCalendar();
 });
 
 // Dark Mode
@@ -196,6 +201,10 @@ async function loadPlanData(type) {
         planData[type] = data;
         renderPlanList(`${type}-list`, data, type);
         updateProgressBadges();
+        // Update calendar dots if calendar is visible
+        if (document.getElementById('calendar-days')) {
+            renderCalendarDots();
+        }
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -539,7 +548,12 @@ async function updateStatus(type, id, status) {
 
 // Reload current tab data
 function reloadCurrentTab() {
-    loadPlanData(currentTab);
+    if (currentTab === 'calendar') {
+        loadAllData();
+        loadCalendarSidebar();
+    } else {
+        loadPlanData(currentTab);
+    }
 }
 
 // Toast notification
@@ -647,4 +661,275 @@ async function handleDrop(e) {
         showToast(error.message, 'error');
         reloadCurrentTab();
     }
+}
+
+// ===== Calendar Functions =====
+
+/**
+ * 캘린더 초기화 함수
+ * 현재 날짜를 기준으로 캘린더를 렌더링하고 사이드바를 로드한다.
+ */
+function initCalendar() {
+    renderCalendar();
+    loadCalendarSidebar();
+}
+
+/**
+ * 월 이동 네비게이션 함수
+ * @param {number} delta - 이동할 월 수 (-1: 이전 달, 1: 다음 달)
+ */
+function navigateMonth(delta) {
+    currentCalendarMonth += delta;
+    if (currentCalendarMonth > 11) {
+        currentCalendarMonth = 0;
+        currentCalendarYear++;
+    } else if (currentCalendarMonth < 0) {
+        currentCalendarMonth = 11;
+        currentCalendarYear--;
+    }
+    renderCalendar();
+    loadCalendarSidebar();
+}
+
+/**
+ * 오늘 날짜로 이동하는 함수
+ */
+function goToToday() {
+    const today = new Date();
+    currentCalendarYear = today.getFullYear();
+    currentCalendarMonth = today.getMonth();
+    renderCalendar();
+    loadCalendarSidebar();
+}
+
+/**
+ * 캘린더 렌더링 함수
+ * 현재 연도/월을 기준으로 달력 그리드를 렌더링한다.
+ */
+function renderCalendar() {
+    const titleEl = document.getElementById('calendar-title');
+    const daysEl = document.getElementById('calendar-days');
+
+    // Update title
+    const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월',
+                        '7월', '8월', '9월', '10월', '11월', '12월'];
+    titleEl.textContent = `${currentCalendarYear}년 ${monthNames[currentCalendarMonth]}`;
+
+    // Calculate days
+    const firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1);
+    const lastDay = new Date(currentCalendarYear, currentCalendarMonth + 1, 0);
+    const startDayOfWeek = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+
+    // Previous month days
+    const prevLastDay = new Date(currentCalendarYear, currentCalendarMonth, 0).getDate();
+
+    // Today check
+    const today = new Date();
+    const todayStr = formatDate(today);
+
+    let html = '';
+
+    // Previous month's trailing days
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+        const day = prevLastDay - i;
+        const prevMonth = currentCalendarMonth === 0 ? 11 : currentCalendarMonth - 1;
+        const prevYear = currentCalendarMonth === 0 ? currentCalendarYear - 1 : currentCalendarYear;
+        const dateStr = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        html += createCalendarDay(day, dateStr, true, 0);
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${currentCalendarYear}-${String(currentCalendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayOfWeek = new Date(currentCalendarYear, currentCalendarMonth, day).getDay();
+        const isToday = dateStr === todayStr;
+        html += createCalendarDay(day, dateStr, false, dayOfWeek, isToday);
+    }
+
+    // Next month's leading days
+    const totalCells = Math.ceil((startDayOfWeek + daysInMonth) / 7) * 7;
+    const remainingCells = totalCells - (startDayOfWeek + daysInMonth);
+    for (let day = 1; day <= remainingCells; day++) {
+        const nextMonth = currentCalendarMonth === 11 ? 0 : currentCalendarMonth + 1;
+        const nextYear = currentCalendarMonth === 11 ? currentCalendarYear + 1 : currentCalendarYear;
+        const dateStr = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        html += createCalendarDay(day, dateStr, true, 0);
+    }
+
+    daysEl.innerHTML = html;
+
+    // Render plan dots after DOM is updated
+    renderCalendarDots();
+}
+
+/**
+ * 캘린더 일자 요소를 생성하는 함수
+ * @param {number} day - 일자
+ * @param {string} dateStr - 날짜 문자열 (YYYY-MM-DD)
+ * @param {boolean} isOtherMonth - 다른 달 여부
+ * @param {number} dayOfWeek - 요일 (0: 일요일, 6: 토요일)
+ * @param {boolean} isToday - 오늘 여부
+ * @returns {string} HTML 문자열
+ */
+function createCalendarDay(day, dateStr, isOtherMonth, dayOfWeek, isToday = false) {
+    let classes = 'calendar-day';
+    if (isOtherMonth) classes += ' other-month';
+    if (isToday) classes += ' today';
+    if (dayOfWeek === 0) classes += ' sun';
+    if (dayOfWeek === 6) classes += ' sat';
+
+    return `
+        <div class="${classes}" data-date="${dateStr}" onclick="onCalendarDayClick('${dateStr}')">
+            <div class="day-number">${day}</div>
+            <div class="day-dots" id="dots-${dateStr}"></div>
+        </div>
+    `;
+}
+
+/**
+ * 캘린더에 계획 점을 렌더링하는 함수
+ * 각 일자에 해당하는 계획들을 점으로 표시한다.
+ */
+function renderCalendarDots() {
+    // Clear all dots first
+    document.querySelectorAll('.day-dots').forEach(el => el.innerHTML = '');
+
+    // Daily plans - show on planDate
+    planData.daily.forEach(plan => {
+        const dotsEl = document.getElementById(`dots-${plan.planDate}`);
+        if (dotsEl) {
+            dotsEl.innerHTML += createPlanDot(plan);
+        }
+    });
+
+    // Weekly plans - show on weekStartDate
+    planData.weekly.forEach(plan => {
+        const dotsEl = document.getElementById(`dots-${plan.weekStartDate}`);
+        if (dotsEl) {
+            dotsEl.innerHTML += createPlanDot(plan);
+        }
+    });
+}
+
+/**
+ * 계획 점 HTML을 생성하는 함수
+ * @param {Object} plan - 계획 객체
+ * @returns {string} HTML 문자열
+ */
+function createPlanDot(plan) {
+    const priorityClass = plan.priority.toLowerCase();
+    const completedClass = plan.status === 'COMPLETED' ? ' completed' : '';
+    return `<div class="plan-dot ${priorityClass}${completedClass}" title="${escapeHtml(plan.title)}"></div>`;
+}
+
+/**
+ * 캘린더 일자 클릭 이벤트 핸들러
+ * 선택된 날짜로 일간 계획 탭으로 이동하고 필터를 적용한다.
+ * @param {string} dateStr - 클릭한 날짜 (YYYY-MM-DD)
+ */
+function onCalendarDayClick(dateStr) {
+    // Switch to daily tab
+    switchTab('daily');
+
+    // Set the filter date
+    document.getElementById('daily-filter-date').value = dateStr;
+
+    // Apply filter
+    filterDaily();
+}
+
+/**
+ * 캘린더 사이드바에 이번 달 계획 목록을 로드하는 함수
+ */
+async function loadCalendarSidebar() {
+    const year = currentCalendarYear;
+    const month = currentCalendarMonth + 1;
+
+    // Calculate month start and end dates
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+    try {
+        // Load daily plans for this month
+        const dailyPlans = await apiCall(`/daily/date-range?startDate=${startDate}&endDate=${endDate}`);
+        renderSidebarPlanList('sidebar-daily-list', dailyPlans, 'daily');
+
+        // Load weekly plans (filter by week start date in this month range)
+        const weeklyPlans = await apiCall(`/weekly/date-range?startDate=${startDate}&endDate=${endDate}`);
+        renderSidebarPlanList('sidebar-weekly-list', weeklyPlans, 'weekly');
+
+        // Load monthly plans for this month
+        const monthlyPlans = await apiCall(`/monthly/year/${year}/month/${month}`);
+        renderSidebarPlanList('sidebar-monthly-list', monthlyPlans, 'monthly');
+
+    } catch (error) {
+        console.error('Failed to load calendar sidebar:', error);
+    }
+}
+
+/**
+ * 사이드바 계획 목록을 렌더링하는 함수
+ * @param {string} containerId - 컨테이너 요소 ID
+ * @param {Array} plans - 계획 배열
+ * @param {string} type - 계획 타입
+ */
+function renderSidebarPlanList(containerId, plans, type) {
+    const container = document.getElementById(containerId);
+
+    if (!plans || plans.length === 0) {
+        container.innerHTML = '<div class="sidebar-empty">계획 없음</div>';
+        return;
+    }
+
+    container.innerHTML = plans.map(plan => createSidebarPlanItem(plan, type)).join('');
+}
+
+/**
+ * 사이드바 계획 아이템 HTML을 생성하는 함수
+ * @param {Object} plan - 계획 객체
+ * @param {string} type - 계획 타입
+ * @returns {string} HTML 문자열
+ */
+function createSidebarPlanItem(plan, type) {
+    let dateInfo = '';
+    if (type === 'daily') {
+        dateInfo = plan.planDate;
+    } else if (type === 'weekly') {
+        dateInfo = `${plan.weekStartDate} ~ ${plan.weekEndDate}`;
+    } else if (type === 'monthly') {
+        dateInfo = `${plan.year}년 ${plan.month}월`;
+    }
+
+    const completedClass = plan.status === 'COMPLETED' ? ' completed' : '';
+
+    return `
+        <div class="sidebar-plan-item priority-${plan.priority}${completedClass}" onclick="goToPlan('${type}', ${plan.id})">
+            <div class="sidebar-plan-info">
+                <div class="sidebar-plan-title">${escapeHtml(plan.title)}</div>
+                <div class="sidebar-plan-date">${dateInfo}</div>
+            </div>
+            <span class="sidebar-plan-status ${plan.status}">${STATUS_LABELS[plan.status]}</span>
+        </div>
+    `;
+}
+
+/**
+ * 사이드바에서 계획 클릭 시 해당 탭으로 이동하는 함수
+ * @param {string} type - 계획 타입
+ * @param {number} id - 계획 ID
+ */
+function goToPlan(type, id) {
+    switchTab(type);
+    // Optionally highlight the specific plan or open edit modal
+    setTimeout(() => {
+        const planCard = document.querySelector(`.plan-card[data-id="${id}"][data-type="${type}"]`);
+        if (planCard) {
+            planCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            planCard.style.animation = 'none';
+            planCard.offsetHeight; // Trigger reflow
+            planCard.style.animation = 'cardEnter 0.5s ease';
+        }
+    }, 100);
 }

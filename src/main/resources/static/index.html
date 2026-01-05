@@ -21,7 +21,10 @@
         </header>
 
         <nav class="tabs">
-            <button class="tab-btn active" data-tab="daily">
+            <button class="tab-btn active" data-tab="calendar">
+                캘린더
+            </button>
+            <button class="tab-btn" data-tab="daily">
                 일간 계획
                 <span class="progress-badge" id="daily-progress"></span>
             </button>
@@ -39,8 +42,54 @@
             </button>
         </nav>
 
+        <!-- Calendar Tab -->
+        <div id="calendar" class="tab-content active">
+            <div class="calendar-container">
+                <div class="calendar-main">
+                    <div class="calendar-header">
+                        <button class="btn btn-secondary calendar-nav-btn" onclick="navigateMonth(-1)">&lt;</button>
+                        <h2 id="calendar-title"></h2>
+                        <button class="btn btn-secondary calendar-nav-btn" onclick="navigateMonth(1)">&gt;</button>
+                        <button class="btn btn-secondary" onclick="goToToday()">오늘</button>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="calendar-weekdays">
+                            <div class="weekday sun">일</div>
+                            <div class="weekday">월</div>
+                            <div class="weekday">화</div>
+                            <div class="weekday">수</div>
+                            <div class="weekday">목</div>
+                            <div class="weekday">금</div>
+                            <div class="weekday sat">토</div>
+                        </div>
+                        <div class="calendar-days" id="calendar-days"></div>
+                    </div>
+                    <div class="calendar-legend">
+                        <div class="legend-item"><span class="legend-dot high"></span> 높은 우선순위</div>
+                        <div class="legend-item"><span class="legend-dot medium"></span> 보통 우선순위</div>
+                        <div class="legend-item"><span class="legend-dot low"></span> 낮은 우선순위</div>
+                    </div>
+                </div>
+                <div class="calendar-sidebar">
+                    <h3 class="sidebar-title">이번 달 계획</h3>
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-section-title">일간 계획</h4>
+                        <div id="sidebar-daily-list" class="sidebar-plan-list"></div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-section-title">주간 계획</h4>
+                        <div id="sidebar-weekly-list" class="sidebar-plan-list"></div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-section-title">월간 계획</h4>
+                        <div id="sidebar-monthly-list" class="sidebar-plan-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Daily Tab -->
-        <div id="daily" class="tab-content active">
+        <div id="daily" class="tab-content">
             <div class="tab-header">
                 <h2>일간 계획</h2>
                 <button class="btn btn-primary" onclick="openModal('daily')">+ 새 계획</button>
